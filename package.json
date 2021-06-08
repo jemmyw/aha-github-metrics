@@ -1,0 +1,37 @@
+{
+  "name": "kealabs.github-metrics",
+  "description": "Github Metrics",
+  "version": "0.0.0",
+  "author": "kealabs",
+  "repository": {
+    "type": "git",
+    "url": "TODO: Add the GitHub URL to your extension in package.json"
+  },
+  "license": "MIT",
+  "devDependencies": {
+    "aha-cli": "1.9.8"
+  },
+  "ahaExtension": {
+    "contributes": {
+      "views": {
+        "metricsPage": {
+          "title": "Metrics Page",
+          "entryPoint": "src/views/metricsPage.tsx",
+          "host": "page",
+          "location": {
+            "menu": "Document"
+          }
+        }
+      },
+      "eventHandlers": {
+        "collector": {
+          "title": "collector",
+          "entryPoint": "src/eventHandlers/collector.ts",
+          "handles": [
+            "aha-develop.github.pr.labelled"
+          ]
+        }
+      }
+    }
+  }
+}
