@@ -6,7 +6,12 @@ export interface Versioned {
 }
 
 export interface CollectionStore {
-  data: Record<string, { start?: number; finish?: number }>;
+  data: Record<string, Collected>;
+}
+
+export interface Collected {
+  start?: number;
+  finish?: number;
 }
 
 export async function storeVersioned<
@@ -33,39 +38,5 @@ export async function storeVersioned<
       await aha.account.setExtensionField(EXTENSION_ID, name, newValue);
       return newValue;
     }
-  }
-}
-
-export async function storeStartedAt(rule: Rule, id: string) {
-  const data = await storeVersioned<CollectionStore>(
-    collectorFieldName(rule),
-    { data: {} },
-    async (value) => ({
-      data: {
-        ...value.data,
-        [id]: { start: new Date().valueOf() / 1000 },
-      },
-    })
-  );
-
-  if (data.data[id] && data.data[id].start && data.data[id].finish) {
-    aha.triggerServer(`${EXTENSION_ID}.bin`, { rule, id });
-  }
-}
-
-export async function storeFinishedAt(rule: Rule, id: string) {
-  const data = await storeVersioned<CollectionStore>(
-    `${rule}-collector`,
-    { data: {} },
-    async (value) => ({
-      data: {
-        ...value.data,
-        [id]: { finish: new Date().valueOf() / 1000 },
-      },
-    })
-  );
-
-  if (data.data[id] && data.data[id].start && data.data[id].finish) {
-    aha.triggerServer(`${EXTENSION_ID}.bin`, { rule, id });
   }
 }

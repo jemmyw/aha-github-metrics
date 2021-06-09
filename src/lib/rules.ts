@@ -1,4 +1,5 @@
-import { storeFinishedAt, storeStartedAt } from "./store";
+import { EXTENSION_ID } from "../extension";
+import { Collected } from "./store";
 
 export interface RuleMatcher {
   path: string;
@@ -8,18 +9,19 @@ export interface RuleMatcher {
 export interface RuleEvent {
   event: string;
   matchers: RuleMatcher[];
+  identifierPath: string;
 }
 
 export interface Rule {
   name: string;
-  identifierPath: string;
   startEvent: RuleEvent;
   finishEvent: RuleEvent;
   aggregate: "count" | "time";
   timeoutHours: number;
 }
 
-export const collectorFieldName = (rule: Rule) => `${rule.name}-collector`;
+export const collectorFieldName = (rule: Rule, id: string) =>
+  `${rule.name}.collector.${id}`;
 
 function createPath(path: string) {
   const elements = path.split(".");
@@ -45,6 +47,10 @@ function createMatcher(matcher: RuleMatcher) {
           (value && matcher.value === "true") ||
           (!value && matcher.value === "false")
         );
+      case "object":
+        if (Array.isArray(value)) {
+          return value.includes(matcher.value);
+        }
       default:
         return value === matcher.value;
     }
@@ -59,15 +65,43 @@ function matchEvent(event: string, payload: any, ruleEvent: RuleEvent) {
 
 export function processRule(event: string, payload: any) {
   return async (rule: Rule) => {
-    const id: string = createPath(rule.identifierPath)(payload);
-    if (!id) return;
-
     if (matchEvent(event, payload, rule.startEvent)) {
+      const id: string = createPath(rule.startEvent.identifierPath)(payload);
+      if (!id) return;
       await storeStartedAt(rule, id);
     }
 
     if (matchEvent(event, payload, rule.finishEvent)) {
+      const id: string = createPath(rule.finishEvent.identifierPath)(payload);
+      if (!id) return;
       await storeFinishedAt(rule, id);
     }
   };
+}
+
+export async function storeStartedAt(rule: Rule, id: string) {
+  await aha.account.setExtensionField(
+    EXTENSION_ID,
+    collectorFieldName(rule, id),
+    {
+      start: new Date().valueOf() / 1000,
+    }
+  );
+}
+
+export async function storeFinishedAt(rule: Rule, id: string) {
+  const data = await aha.account.getExtensionField<Collected>(
+    EXTENSION_ID,
+    collectorFieldName(rule, id)
+  );
+  if (!data || !data.start) return;
+  data.finish = new Date().valueOf() / 1000;
+
+  await aha.account.setExtensionField(
+    EXTENSION_ID,
+    collectorFieldName(rule, id),
+    data
+  );
+
+  aha.triggerServer(`${EXTENSION_ID}.bin`, { rule, id });
 }

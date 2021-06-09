@@ -9,6 +9,8 @@
   },
   "license": "MIT",
   "devDependencies": {
+    "@types/react": "^17.0.9",
+    "@types/react-dom": "^17.0.6",
     "aha-cli": "1.9.8"
   },
   "ahaExtension": {
@@ -33,7 +35,7 @@
         },
         "bin": {
           "title": "bin",
-          "entryPoint": "src/eventHandlers/collector.ts",
+          "entryPoint": "src/eventHandlers/bin.ts",
           "handles": [
             "kealabs.github-metrics.bin"
           ]
@@ -47,5 +49,8 @@
         }
       }
     }
+  },
+  "dependencies": {
+    "recoil": "^0.3.1"
   }
 }
