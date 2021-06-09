@@ -23,13 +23,27 @@
           }
         }
       },
-      "eventHandlers": {
+      "events": {
         "collector": {
           "title": "collector",
           "entryPoint": "src/eventHandlers/collector.ts",
           "handles": [
-            "aha-develop.github.pr.labelled"
+            "kealabs.github-metrics.webhook"
           ]
+        },
+        "bin": {
+          "title": "bin",
+          "entryPoint": "src/eventHandlers/collector.ts",
+          "handles": [
+            "kealabs.github-metrics.bin"
+          ]
+        }
+      },
+      "endpoints": {
+        "webhook": {
+          "entryPoint": "src/eventHandlers/webhook.ts",
+          "public": true,
+          "title": "Github metrics endpoint"
         }
       }
     }
