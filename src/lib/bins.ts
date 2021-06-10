@@ -22,3 +22,17 @@ export interface Bin {
 export async function getRuleBins(rule: Rule) {
   return aha.account.getExtensionField<Bins>(EXTENSION_ID, binsFieldName(rule));
 }
+
+export function combineBins(bin1: Bin, bin2: Bin): Bin {
+  return {
+    count: bin1.count + bin2.count,
+    lastAt: Math.max(bin1.lastAt, bin2.lastAt),
+    startAt: Math.min(bin1.startAt, bin2.startAt),
+    max: Math.max(bin1.max, bin2.max),
+    mean:
+      (bin1.mean * bin1.count + bin2.mean * bin2.count) /
+      (bin1.count + bin2.count),
+    min: Math.min(bin1.min, bin2.min),
+    version: 0,
+  };
+}

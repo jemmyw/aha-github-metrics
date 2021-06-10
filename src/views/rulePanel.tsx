@@ -1,8 +1,10 @@
-import { Line } from "@nivo/line";
+import { Line, PointTooltipProps } from "@nivo/line";
 import React, { useEffect, useState } from "react";
 import { EXTENSION_ID } from "../extension";
-import { Bin, binFieldName, getRuleBins } from "../lib/bins";
+import { Bin, binFieldName, combineBins, getRuleBins } from "../lib/bins";
 import { Rule } from "../lib/rules";
+
+const MAX_POINTS = 20;
 
 const CustomSymbol = ({ size, color, borderWidth, borderColor }: any) => (
   <g>
@@ -77,14 +79,41 @@ async function loadData(rule: Rule): Promise<Bin[]> {
   return Promise.all(promises).then((bins) => bins.filter(Boolean) as Bin[]);
 }
 
-const RulePanelContainer: React.FC<{ rule: Rule }> = ({ rule, children }) => {
-  return (
-    <div className="rule-panel">
-      <h2>{rule.title || rule.name}</h2>
-      {children}
-    </div>
-  );
-};
+function binMidTime(bin: Bin) {
+  return (bin.startAt + (bin.lastAt - bin.startAt) / 2) * 1000;
+}
+
+function combineCloseBins(bins: Bin[]): Bin[] {
+  if (bins.length < 2) return bins;
+
+  const startAt = bins[0].startAt;
+  const lastAt = bins.slice(-1)[0].lastAt;
+  const combineWithin = ((lastAt - startAt) / MAX_POINTS) * 1000;
+
+  return bins.reduce((acc, bin) => {
+    if (acc.length === 0) return [bin];
+    const lastBin = acc.slice(-1)[0];
+    if (
+      lastBin.lastAt > bin.startAt ||
+      binMidTime(bin) - binMidTime(lastBin) <= combineWithin
+    )
+      return [...acc.slice(0, -1), combineBins(lastBin, bin)];
+
+    return [...acc, bin];
+  }, [] as Bin[]);
+}
+
+function binsToData(bins: Bin[]) {
+  return bins.map((bin) => {
+    const d = new Date(binMidTime(bin));
+
+    return {
+      x: d,
+      y: bin.mean,
+      count: bin.count,
+    };
+  });
+}
 
 const DURATIONS = {
   second: 1,
@@ -112,6 +141,45 @@ function formatSeconds(s: number) {
   return `${Math.round(s * 100) / 100}s`;
 }
 
+const RulePanelContainer: React.FC<{ rule: Rule }> = ({ rule, children }) => {
+  return (
+    <div className="rule-panel">
+      <h2>{rule.title || rule.name}</h2>
+      {children}
+    </div>
+  );
+};
+
+const PointTooltip: React.FC<PointTooltipProps> = ({ point }) => (
+  <div
+    style={{
+      background: "white",
+      color: "inherit",
+      fontSize: "inherit",
+      borderRadius: 2,
+      boxShadow: "rgba(0, 0, 0, 0.25) 0px 1px 2px",
+      padding: "5px 9px",
+    }}
+  >
+    <div style={{ whiteSpace: "pre", display: "flex", alignItems: "center" }}>
+      <span
+        style={{
+          display: "block",
+          width: 12,
+          height: 12,
+          background: point.color,
+          marginRight: 7,
+        }}
+      ></span>
+      <span>
+        x: <strong>{point.data.xFormatted}</strong>, y:{" "}
+        <strong>{point.data.yFormatted}</strong>, count:{" "}
+        <strong>{point.data.count}</strong>
+      </span>
+    </div>
+  </div>
+);
+
 export const RulePanel: React.FC<{ rule: Rule }> = ({ rule }) => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -120,7 +188,7 @@ export const RulePanel: React.FC<{ rule: Rule }> = ({ rule }) => {
   useEffect(() => {
     loadData(rule)
       .then((bins) => {
-        setBins(bins);
+        setBins(combineCloseBins(bins));
         setLoading(false);
       })
       .catch((err) => {
@@ -137,7 +205,7 @@ export const RulePanel: React.FC<{ rule: Rule }> = ({ rule }) => {
     );
   }
 
-  if (loading || !bins) {
+  if (!bins) {
     return (
       <RulePanelContainer rule={rule}>
         <aha-spinner />
@@ -145,32 +213,30 @@ export const RulePanel: React.FC<{ rule: Rule }> = ({ rule }) => {
     );
   }
 
-  const data = bins.map((bin) => {
-    const d = new Date((bin.startAt + (bin.lastAt - bin.startAt) / 2) * 1000);
-
-    return {
-      x: d,
-      y: bin.mean,
-    };
-  });
+  const meanData = binsToData(bins);
 
   return (
     <RulePanelContainer rule={rule}>
+      {loading && <aha-spinner />}
       <Line
         width={900}
         height={400}
-        margin={{ top: 20, right: 20, bottom: 60, left: 80 }}
+        margin={{ top: 20, right: 20, bottom: 60, left: 60 }}
         animate={true}
         data={[
           {
             id: "Mean",
-            data: data,
+            data: meanData,
           },
         ]}
+        tooltip={PointTooltip}
         xScale={{
           type: "time",
           format: "native",
           precision: "minute",
+          min: new Date(
+            (meanData[0].x.valueOf() / 1000 - DURATIONS.minute * 10) * 1000
+          ),
         }}
         xFormat="time:%Y-%m-%d %H:%M"
         yScale={{
@@ -178,7 +244,9 @@ export const RulePanel: React.FC<{ rule: Rule }> = ({ rule }) => {
           stacked: false,
         }}
         yFormat={(d) => formatSeconds(Number(d.valueOf()))}
-        axisLeft={{}}
+        axisLeft={{
+          format: (d) => formatSeconds(d),
+        }}
         axisBottom={{
           format: "%b %d %H:%M",
           // tickValues: "every 5 minutes",
