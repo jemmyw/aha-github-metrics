@@ -1,7 +1,7 @@
 {
   "name": "kealabs.github-metrics",
   "description": "Github Metrics",
-  "version": "0.0.0",
+  "version": "0.0.3",
   "author": "kealabs",
   "repository": {
     "type": "git",
@@ -30,7 +30,7 @@
           "title": "collector",
           "entryPoint": "src/eventHandlers/collector.ts",
           "handles": [
-            "kealabs.github-metrics.webhook"
+            "kealabs.github-metrics.collector"
           ]
         },
         "bin": {

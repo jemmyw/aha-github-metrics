@@ -1,5 +1,4 @@
 import { EXTENSION_ID } from "../extension";
-import { Collected } from "./store";
 
 export interface RuleMatcher {
   path: string;
@@ -18,6 +17,11 @@ export interface Rule {
   finishEvent: RuleEvent;
   aggregate: "count" | "time";
   timeoutHours: number;
+}
+
+export interface Collected {
+  start?: number;
+  finish?: number;
 }
 
 export const collectorFieldName = (rule: Rule, id: string) =>
@@ -68,12 +72,14 @@ export function processRule(event: string, payload: any) {
     if (matchEvent(event, payload, rule.startEvent)) {
       const id: string = createPath(rule.startEvent.identifierPath)(payload);
       if (!id) return;
+      console.log("matched starting rule");
       await storeStartedAt(rule, id);
     }
 
     if (matchEvent(event, payload, rule.finishEvent)) {
       const id: string = createPath(rule.finishEvent.identifierPath)(payload);
       if (!id) return;
+      console.log("matched finishing rule");
       await storeFinishedAt(rule, id);
     }
   };
@@ -104,4 +110,16 @@ export async function storeFinishedAt(rule: Rule, id: string) {
   );
 
   aha.triggerServer(`${EXTENSION_ID}.bin`, { rule, id });
+}
+
+export async function loadRules() {
+  const rules = await aha.account.getExtensionField<Rule[]>(
+    EXTENSION_ID,
+    "rules"
+  );
+  return rules || [];
+}
+
+export async function saveRules(rules: Rule[]) {
+  await aha.account.setExtensionField(EXTENSION_ID, "rules", rules);
 }

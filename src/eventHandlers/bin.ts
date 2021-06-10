@@ -1,6 +1,6 @@
 import { EXTENSION_ID } from "../extension";
-import { collectorFieldName, Rule } from "../lib/rules";
-import { Collected, CollectionStore, storeVersioned } from "../lib/store";
+import { Collected, collectorFieldName, Rule } from "../lib/rules";
+import { deleteField, storeVersioned } from "../lib/store";
 
 const BIN_DURATION = 300;
 
@@ -23,17 +23,8 @@ interface Bin {
 }
 
 const isItTimeForANewBin = (bins: Bins) =>
+  !bins.lastBinStart ||
   new Date().valueOf() / 1000 - bins.lastBinStart > BIN_DURATION;
-
-const deleteField = async (name: string) => {
-  await (aha as any).graphMutate(`
-    mutation {
-      deleteExtensionField(extensionIdentifier: '${EXTENSION_ID}', extensionFieldableType: 'Account', name: '${name}') {
-        success
-      }
-    }
-  `);
-};
 
 aha.on(
   { event: `${EXTENSION_ID}.bin` },
@@ -46,11 +37,13 @@ aha.on(
     await deleteField(collectorFieldName(rule, id));
 
     const { start, finish } = data;
+    if (!finish || !start) return;
+
     const duration = finish - start;
     let newBin = false;
 
     await storeVersioned<Bins>(
-      collectorFieldName(rule, id),
+      binsFieldName(rule),
       { length: 0 },
       async (bins) => {
         newBin = isItTimeForANewBin(bins);
@@ -67,6 +60,8 @@ aha.on(
             version: 0,
           };
 
+          console.log("Making a new bin", bin);
+
           await aha.account.setExtensionField(
             EXTENSION_ID,
             binFieldName(rule, newBinNumber),
@@ -76,7 +71,7 @@ aha.on(
           return {
             ...bins,
             length: newBinNumber,
-            finish,
+            lastBinStart: finish,
           };
         }
 
@@ -89,7 +84,7 @@ aha.on(
             lastAt: finish,
             max: Math.max(bin.max, duration),
             min: Math.min(bin.min, duration),
-            mean: (bin.mean + duration) / (bin.count + 1),
+            mean: (bin.mean * bin.count + duration) / (bin.count + 1),
           })
         );
 
@@ -98,7 +93,7 @@ aha.on(
     );
 
     if (newBin) {
-      aha.triggerServer("kealabs.github-metrics.rebin", { rule });
+      aha.triggerServer(`${EXTENSION_ID}.cleanup`, { rule });
     }
   }
 );

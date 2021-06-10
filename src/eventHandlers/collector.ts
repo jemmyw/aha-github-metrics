@@ -1,10 +1,9 @@
 import { EXTENSION_ID } from "../extension";
-import { processRule, Rule } from "../lib/rules";
-import { loadRules } from "../store/rulesAtom";
+import { loadRules, processRule } from "../lib/rules";
 
 aha.on(
-  { event: `${EXTENSION_ID}.webhook` },
-  async ({ event, payload }, { settings }) => {
+  { event: `${EXTENSION_ID}.collector` },
+  async ({ event, payload }: { event: string; payload: any }) => {
     console.log("responding to webhook", event);
     const rules = await loadRules();
     console.log(`${rules.length} rules to process`);

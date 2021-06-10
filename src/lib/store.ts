@@ -5,15 +5,6 @@ export interface Versioned {
   version: number;
 }
 
-export interface CollectionStore {
-  data: Record<string, Collected>;
-}
-
-export interface Collected {
-  start?: number;
-  finish?: number;
-}
-
 export async function storeVersioned<
   T,
   V extends T & Versioned = T & Versioned
@@ -39,4 +30,14 @@ export async function storeVersioned<
       return newValue;
     }
   }
+}
+
+export async function deleteField(name: string) {
+  await (aha as any).graphMutate(`
+    mutation {
+      deleteExtensionField(extensionIdentifier: "${EXTENSION_ID}", extensionFieldableType: "Account", name: "${name}") {
+        success
+      }
+    }
+  `);
 }

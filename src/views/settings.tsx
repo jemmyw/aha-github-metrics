@@ -1,7 +1,8 @@
 import React, { useEffect, useRef, useState } from "react";
 import { useRecoilState } from "recoil";
-import { Rule, RuleEvent, RuleMatcher } from "../lib/rules";
-import { rulesAtom, saveRules } from "../store/rulesAtom";
+import { Rule, RuleEvent, RuleMatcher, saveRules } from "../lib/rules";
+import { rulesAtom } from "../store/rulesAtom";
+import { expandedRuleAtom } from "../store/settingsAtom";
 
 const MatchEditor: React.FC<{
   matcher: RuleMatcher;
@@ -17,22 +18,19 @@ const MatchEditor: React.FC<{
   return (
     <div className="match">
       <div className="editor-field path">
-        <label>Path</label>
         <input
           type="text"
           value={matcher.path}
           onChange={handleChange("path")}
         />
-      </div>
-      <div className="editor-field value">
-        <label>value</label>
+        <span>==</span>
         <input
           type="text"
           value={matcher.value}
           onChange={handleChange("value")}
         />
+        <aha-button onClick={onDelete}>Delete</aha-button>
       </div>
-      <aha-button onClick={onDelete}>Delete</aha-button>
     </div>
   );
 };
@@ -106,10 +104,10 @@ const RuleEventEditor: React.FC<{
 const RuleEditor: React.FC<{
   onUpdate: (rule: Partial<Rule>) => void;
   onDelete(): void;
+  onExpand(): void;
   rule: Rule;
-}> = ({ rule, onUpdate, onDelete }) => {
-  const [expanded, setExpanded] = useState(rule.name === "");
-
+  expanded: boolean;
+}> = ({ rule, onUpdate, onDelete, expanded, onExpand }) => {
   const handleDelete = () => {
     if (confirm("Are you sure?")) {
       onDelete();
@@ -124,7 +122,7 @@ const RuleEditor: React.FC<{
     return (
       <div className="rule-editor collapsed">
         {rule.name}
-        <aha-button onClick={() => setExpanded(true)}>Edit</aha-button>
+        <aha-button onClick={onExpand}>Edit</aha-button>
       </div>
     );
   }
@@ -132,7 +130,7 @@ const RuleEditor: React.FC<{
   return (
     <div className="rule-editor expanded">
       <div className="editor-field name">
-        <span>Name</span>
+        <label>Name</label>
         <input
           type="text"
           value={rule.name}
@@ -166,7 +164,6 @@ const RuleEditor: React.FC<{
       </div>
 
       <div>
-        <aha-button onClick={() => setExpanded(false)}>Save</aha-button>
         <aha-button onClick={handleDelete}>Delete</aha-button>
       </div>
     </div>
@@ -176,7 +173,8 @@ const RuleEditor: React.FC<{
 export const Settings: React.FC<{ onDone: () => void }> = ({ onDone }) => {
   const [rules, setRules] = useRecoilState(rulesAtom);
   const [updating, setUpdating] = useState(false);
-  const updatePromise = useRef<Promise<void>>(null);
+  const [expanded, setExpanded] = useRecoilState(expandedRuleAtom);
+  const updatePromise = useRef<Promise<void> | null>(null);
 
   useEffect(() => {
     if (updatePromise.current) {
@@ -209,6 +207,7 @@ export const Settings: React.FC<{ onDone: () => void }> = ({ onDone }) => {
       timeoutHours: 1,
     };
     setRules((rules) => [...rules, newRule]);
+    setExpanded(rules.length - 1);
   };
 
   const updateRule = (idx: number, updates: Partial<Rule>) => {
@@ -236,14 +235,18 @@ export const Settings: React.FC<{ onDone: () => void }> = ({ onDone }) => {
 
       <div className="rules">
         {rules.map((rule, idx) => {
-          const handleUpdate = (updates) => updateRule(idx, updates);
+          const handleUpdate = (updates: Partial<Rule>) =>
+            updateRule(idx, updates);
           const handleDelete = () => deleteRule(idx);
+          const handleExpand = () => setExpanded(idx);
 
           return (
             <RuleEditor
               rule={rule}
               onUpdate={handleUpdate}
               onDelete={handleDelete}
+              onExpand={handleExpand}
+              expanded={expanded === idx}
               key={idx}
             />
           );
