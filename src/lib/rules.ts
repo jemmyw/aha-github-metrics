@@ -13,6 +13,7 @@ export interface RuleEvent {
 
 export interface Rule {
   name: string;
+  title: string;
   startEvent: RuleEvent;
   finishEvent: RuleEvent;
   aggregate: "count" | "time";

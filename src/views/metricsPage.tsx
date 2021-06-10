@@ -3,6 +3,7 @@ import { RecoilRoot, useRecoilState } from "recoil";
 import { loadRules } from "../lib/rules";
 import { rulesAtom } from "../store/rulesAtom";
 import { showSettingsAtom } from "../store/settingsAtom";
+import { RulePanel } from "./rulePanel";
 import { Settings } from "./settings";
 
 const Styles = () => {
@@ -70,6 +71,14 @@ const Page: React.FC<{}> = () => {
           <aha-button onClick={() => setShowSettings(true)}>
             Settings
           </aha-button>
+        </div>
+        <div
+          style={{ display: "flex", flexWrap: "wrap" }}
+          className="rule-panels"
+        >
+          {rules.map((rule, idx) => (
+            <RulePanel rule={rule} key={idx} />
+          ))}
         </div>
       </div>
     </div>

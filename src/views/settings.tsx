@@ -121,7 +121,7 @@ const RuleEditor: React.FC<{
   if (!expanded) {
     return (
       <div className="rule-editor collapsed">
-        {rule.name}
+        {rule.title || rule.name}
         <aha-button onClick={onExpand}>Edit</aha-button>
       </div>
     );
@@ -135,6 +135,15 @@ const RuleEditor: React.FC<{
           type="text"
           value={rule.name}
           onChange={(e) => onUpdate({ name: e.target.value })}
+        />
+      </div>
+
+      <div className="editor-field name">
+        <label>Title</label>
+        <input
+          type="text"
+          value={rule.title}
+          onChange={(e) => onUpdate({ title: e.target.value })}
         />
       </div>
 
@@ -204,6 +213,7 @@ export const Settings: React.FC<{ onDone: () => void }> = ({ onDone }) => {
         identifierPath: "number",
       },
       name: "",
+      title: "New rule",
       timeoutHours: 1,
     };
     setRules((rules) => [...rules, newRule]);

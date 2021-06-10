@@ -1,26 +1,9 @@
 import { EXTENSION_ID } from "../extension";
+import { Bin, binFieldName, Bins, binsFieldName } from "../lib/bins";
 import { Collected, collectorFieldName, Rule } from "../lib/rules";
 import { deleteField, storeVersioned } from "../lib/store";
 
 const BIN_DURATION = 300;
-
-const binsFieldName = (rule: Rule) => `${rule.name}.bins`;
-const binFieldName = (rule: Rule, n: number) => `${rule.name}.bin.${n}`;
-
-interface Bins {
-  length: number;
-  lastBinStart?: number;
-}
-
-interface Bin {
-  startAt: number;
-  lastAt: number;
-  count: number;
-  mean: number;
-  min: number;
-  max: number;
-  version: number;
-}
 
 const isItTimeForANewBin = (bins: Bins) =>
   !bins.lastBinStart ||
