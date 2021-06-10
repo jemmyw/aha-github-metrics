@@ -1,4 +1,5 @@
 import { EXTENSION_ID } from "../extension";
+import { getField, setField } from "./store";
 
 export interface RuleMatcher {
   path: string;
@@ -87,40 +88,26 @@ export function processRule(event: string, payload: any) {
 }
 
 export async function storeStartedAt(rule: Rule, id: string) {
-  await aha.account.setExtensionField(
-    EXTENSION_ID,
-    collectorFieldName(rule, id),
-    {
-      start: new Date().valueOf() / 1000,
-    }
-  );
+  await setField(collectorFieldName(rule, id), {
+    start: new Date().valueOf() / 1000,
+  });
 }
 
 export async function storeFinishedAt(rule: Rule, id: string) {
-  const data = await aha.account.getExtensionField<Collected>(
-    EXTENSION_ID,
-    collectorFieldName(rule, id)
-  );
+  const data = await getField<Collected>(collectorFieldName(rule, id));
   if (!data || !data.start) return;
   data.finish = new Date().valueOf() / 1000;
 
-  await aha.account.setExtensionField(
-    EXTENSION_ID,
-    collectorFieldName(rule, id),
-    data
-  );
+  await setField(collectorFieldName(rule, id), data);
 
   aha.triggerServer(`${EXTENSION_ID}.bin`, { rule, id });
 }
 
 export async function loadRules() {
-  const rules = await aha.account.getExtensionField<Rule[]>(
-    EXTENSION_ID,
-    "rules"
-  );
+  const rules = await getField<Rule[]>("rules");
   return rules || [];
 }
 
 export async function saveRules(rules: Rule[]) {
-  await aha.account.setExtensionField(EXTENSION_ID, "rules", rules);
+  await setField("rules", rules);
 }

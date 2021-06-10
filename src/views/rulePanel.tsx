@@ -3,6 +3,7 @@ import React, { useEffect, useState } from "react";
 import { EXTENSION_ID } from "../extension";
 import { Bin, binFieldName, combineBins, getRuleBins } from "../lib/bins";
 import { Rule } from "../lib/rules";
+import { getField } from "../lib/store";
 
 const MAX_POINTS = 20;
 
@@ -71,9 +72,7 @@ async function loadData(rule: Rule): Promise<Bin[]> {
 
   const promises: Promise<Bin | null>[] = [];
   for (let i = binsFrom; i <= binsTo; i++) {
-    promises.push(
-      aha.account.getExtensionField(EXTENSION_ID, binFieldName(rule, i))
-    );
+    promises.push(getField(binFieldName(rule, i)));
   }
 
   return Promise.all(promises).then((bins) => bins.filter(Boolean) as Bin[]);

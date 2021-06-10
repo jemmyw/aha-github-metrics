@@ -1,7 +1,7 @@
 import { EXTENSION_ID } from "../extension";
 import { Bin, binFieldName, Bins, binsFieldName } from "../lib/bins";
 import { Collected, collectorFieldName, Rule } from "../lib/rules";
-import { deleteField, storeVersioned } from "../lib/store";
+import { deleteField, getField, setField, storeVersioned } from "../lib/store";
 
 const BIN_DURATION = 300;
 
@@ -12,10 +12,7 @@ const isItTimeForANewBin = (bins: Bins) =>
 aha.on(
   { event: `${EXTENSION_ID}.bin` },
   async ({ rule, id }: { rule: Rule; id: string }) => {
-    const data = await aha.account.getExtensionField<Collected>(
-      EXTENSION_ID,
-      collectorFieldName(rule, id)
-    );
+    const data = await getField<Collected>(collectorFieldName(rule, id));
     if (!data) return;
     await deleteField(collectorFieldName(rule, id));
 
@@ -45,11 +42,7 @@ aha.on(
 
           console.log("Making a new bin", bin);
 
-          await aha.account.setExtensionField(
-            EXTENSION_ID,
-            binFieldName(rule, newBinNumber),
-            bin
-          );
+          await setField(binFieldName(rule, newBinNumber), bin);
 
           return {
             ...bins,

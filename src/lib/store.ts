@@ -1,5 +1,4 @@
 import { EXTENSION_ID } from "../extension";
-import { collectorFieldName, Rule } from "./rules";
 
 export interface Versioned {
   version: number;
@@ -11,7 +10,7 @@ export async function storeVersioned<
 >(name: string, defaultValue: T, updater: (value: T) => Promise<T>) {
   while (true) {
     let existing =
-      ((await aha.account.getExtensionField(EXTENSION_ID, name)) as V) ||
+      (await getField<V>(name)) ||
       ({
         ...defaultValue,
         version: 0,
@@ -20,13 +19,10 @@ export async function storeVersioned<
       ...(await updater(existing)),
       version: existing.version + 1,
     };
-    let conflict = (await aha.account.getExtensionField(
-      EXTENSION_ID,
-      name
-    )) as V;
+    let conflict = await getField<V>(name);
 
     if (!conflict || conflict.version === existing.version) {
-      await aha.account.setExtensionField(EXTENSION_ID, name, newValue);
+      await setField(name, newValue);
       return newValue;
     }
   }
@@ -40,4 +36,12 @@ export async function deleteField(name: string) {
       }
     }
   `);
+}
+
+export async function setField<T>(name: string, value: T) {
+  await aha.account.setExtensionField(EXTENSION_ID, name, value);
+}
+
+export async function getField<T>(name: string): Promise<T | null> {
+  return aha.account.getExtensionField(EXTENSION_ID, name);
 }

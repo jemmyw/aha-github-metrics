@@ -1,5 +1,6 @@
 import { EXTENSION_ID } from "../extension";
 import { Rule } from "./rules";
+import { getField } from "./store";
 
 export const binsFieldName = (rule: Rule) => `${rule.name}.bins`;
 export const binFieldName = (rule: Rule, n: number) => `${rule.name}.bin.${n}`;
@@ -20,7 +21,7 @@ export interface Bin {
 }
 
 export async function getRuleBins(rule: Rule) {
-  return aha.account.getExtensionField<Bins>(EXTENSION_ID, binsFieldName(rule));
+  return getField<Bins>(binsFieldName(rule));
 }
 
 export function combineBins(bin1: Bin, bin2: Bin): Bin {
