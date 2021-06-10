@@ -1,6 +1,9 @@
 import { EXTENSION_ID } from "../extension";
 import { Rule, Collected } from "../lib/rules";
 import { deleteField } from "../lib/store";
+import { nowSeconds } from "../lib/time";
+
+const STALE_AFTER = 1200; // 20 minutes
 
 aha.on(
   { event: `${EXTENSION_ID}.cleanup` },
@@ -11,7 +14,7 @@ aha.on(
       value: any;
     }[];
 
-    const stale = new Date().valueOf() / 1000 - 1200;
+    const stale = nowSeconds() - STALE_AFTER;
 
     if (allFields.length > 100) {
       reRun = true;

@@ -2,12 +2,12 @@ import { EXTENSION_ID } from "../extension";
 import { Bin, binFieldName, Bins, binsFieldName } from "../lib/bins";
 import { Collected, collectorFieldName, Rule } from "../lib/rules";
 import { deleteField, getField, setField, storeVersioned } from "../lib/store";
+import { nowSeconds } from "../lib/time";
 
 const BIN_DURATION = 300;
 
 const isItTimeForANewBin = (bins: Bins) =>
-  !bins.lastBinStart ||
-  new Date().valueOf() / 1000 - bins.lastBinStart > BIN_DURATION;
+  !bins.lastBinStart || nowSeconds() - bins.lastBinStart > BIN_DURATION;
 
 aha.on(
   { event: `${EXTENSION_ID}.bin` },

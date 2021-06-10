@@ -1,9 +1,9 @@
 import { Line, PointTooltipProps } from "@nivo/line";
 import React, { useEffect, useState } from "react";
-import { EXTENSION_ID } from "../extension";
 import { Bin, binFieldName, combineBins, getRuleBins } from "../lib/bins";
 import { Rule } from "../lib/rules";
 import { getField } from "../lib/store";
+import { DURATIONS, formatSeconds, seconds } from "../lib/time";
 
 const MAX_POINTS = 20;
 
@@ -114,32 +114,6 @@ function binsToData(bins: Bin[]) {
   });
 }
 
-const DURATIONS = {
-  second: 1,
-  minute: 60,
-  hour: 60 * 60,
-  day: 60 * 60 * 24,
-  week: 60 * 60 * 24 * 7,
-  month: (60 * 60 * 24 * 365) / 12,
-};
-const POSTFIXES = {
-  second: "s",
-  minute: "m",
-  hour: "h",
-  day: "d",
-  week: "w",
-  month: "mo",
-};
-function formatSeconds(s: number) {
-  for (let t of ["month", "week", "day", "hour", "minute"] as Array<
-    keyof typeof DURATIONS
-  >) {
-    if (s > DURATIONS[t])
-      return `${Math.floor(s / DURATIONS[t])}${POSTFIXES[t]}`;
-  }
-  return `${Math.round(s * 100) / 100}s`;
-}
-
 const RulePanelContainer: React.FC<{ rule: Rule }> = ({ rule, children }) => {
   return (
     <div className="rule-panel">
@@ -234,7 +208,7 @@ export const RulePanel: React.FC<{ rule: Rule }> = ({ rule }) => {
           format: "native",
           precision: "minute",
           min: new Date(
-            (meanData[0].x.valueOf() / 1000 - DURATIONS.minute * 10) * 1000
+            (seconds(meanData[0].x) - DURATIONS.minute * 10) * 1000
           ),
         }}
         xFormat="time:%Y-%m-%d %H:%M"

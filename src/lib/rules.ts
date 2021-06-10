@@ -1,5 +1,6 @@
 import { EXTENSION_ID } from "../extension";
 import { getField, setField } from "./store";
+import { nowSeconds } from "./time";
 
 export interface RuleMatcher {
   path: string;
@@ -89,14 +90,14 @@ export function processRule(event: string, payload: any) {
 
 export async function storeStartedAt(rule: Rule, id: string) {
   await setField(collectorFieldName(rule, id), {
-    start: new Date().valueOf() / 1000,
+    start: nowSeconds(),
   });
 }
 
 export async function storeFinishedAt(rule: Rule, id: string) {
   const data = await getField<Collected>(collectorFieldName(rule, id));
   if (!data || !data.start) return;
-  data.finish = new Date().valueOf() / 1000;
+  data.finish = nowSeconds();
 
   await setField(collectorFieldName(rule, id), data);
 
