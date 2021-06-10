@@ -173,7 +173,7 @@ export const RulePanel: React.FC<{ rule: Rule }> = ({ rule }) => {
   if (error) {
     return (
       <RulePanelContainer rule={rule}>
-        <p>{error}</p>
+        <p>{String(error)}</p>
       </RulePanelContainer>
     );
   }
